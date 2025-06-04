@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io('https://mongo-chat-project.onrender.com');
 const messages = document.getElementById('messages');
 const form = document.getElementById('chat-form');
 const input = document.getElementById('msg');
