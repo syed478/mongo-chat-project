@@ -1,13 +1,20 @@
-const socket = io('https://mongo-chat-project.onrender.com');
-
-let username = prompt("Enter your name:");
-if (!username) username = "Anonymous";
-
+const socket = io('https://mongo-chat-project.onrender.com'); // Your deployed backend URL
 const messages = document.getElementById('messages');
 const form = document.getElementById('chat-form');
 const input = document.getElementById('msg');
 const fileInput = document.getElementById('file-input');
 
+// Prompt for user name
+const sender = prompt("Enter your name:") || "User";
+
+// Ask notification permission
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission().then(permission => {
+    console.log("Notification permission:", permission);
+  });
+}
+
+// Submit message
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -22,9 +29,9 @@ form.addEventListener('submit', async (e) => {
   }
 
   const msg = {
-    sender: username,
+    sender,
     text: input.value,
-    fileUrl,
+    fileUrl
   };
 
   socket.emit('chat message', msg);
@@ -32,7 +39,27 @@ form.addEventListener('submit', async (e) => {
   fileInput.value = '';
 });
 
+// Show chat history
+socket.on('chat history', (msgs) => {
+  msgs.forEach(msg => addMessage(msg));
+});
+
+// Receive new message
 socket.on('chat message', (msg) => {
+  addMessage(msg);
+
+  // Show browser notification if sender is not you
+  if (msg.sender !== sender && Notification.permission === "granted") {
+    const notifOptions = {
+      body: msg.text || 'New message received',
+      icon: 'https://img.icons8.com/color/96/chat--v1.png'
+    };
+    new Notification(`Message from ${msg.sender}`, notifOptions);
+  }
+});
+
+// Render message in UI
+function addMessage(msg) {
   const div = document.createElement('div');
   div.innerHTML = `<strong>${msg.sender}</strong>: ${msg.text || ''}`;
   if (msg.fileUrl) {
@@ -45,4 +72,4 @@ socket.on('chat message', (msg) => {
   }
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
-});
+}
